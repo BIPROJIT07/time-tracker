@@ -719,14 +719,18 @@ async function loadTemplates() {
       <div class="template-main-header">
         <div class="task-num">${t.task_number||''}</div>
         <div style="flex:1;font-size:14px;font-weight:700;color:#0d4f4f;">${t.title}</div>
-        <span style="font-size:11px;color:#0d9488;font-weight:600;margin-right:8px;">Daily Task</span>
         <button class="btn-del" onclick="deleteTemplate('${t.id}')">✕ Remove</button>
       </div>
       <div class="template-sub-area">
-        <div style="font-size:12px;color:#7a8a7a;margin-bottom:8px;">Sub-tasks:</div>
-        ${subTemplates.map((s,i) => `<div class="template-sub-row"><div class="sub-num">${s.task_number||i+1}</div><div style="flex:1;">${s.title}</div><button class="btn-del" onclick="deleteSubTemplate('${s.id}', '${t.id}')">✕</button></div>`).join('') || '<p style="color:#aaa;font-size:12px;">No sub-tasks</p>'}
+        <div style="font-size:12px;color:#5a7a7a;margin-bottom:8px;font-weight:600;">Sub-tasks:</div>
+        ${subTemplates.length ? subTemplates.map((s,i) => `
+          <div class="template-sub-row">
+            <div class="sub-num">${s.task_number||i+1}</div>
+            <div style="flex:1;font-size:13px;">${s.title}</div>
+            <button class="btn-del" onclick="deleteSubTemplate('${s.id}')">✕</button>
+          </div>`).join('') : '<p style="color:#aaa;font-size:12px;margin-bottom:6px;">No sub-tasks yet</p>'}
         <div class="add-sub-row" style="margin-top:8px;">
-          <input type="text" id="subTplInput_${t.id}" placeholder="Add permanent sub-task..." onkeypress="if(event.key==='Enter')addSubTemplate('${t.id}')" />
+          <input type="text" id="subTplInput_${t.id}" placeholder="Add sub-task (e.g. Price Check)..." onkeypress="if(event.key==='Enter')addSubTemplate('${t.id}')" />
           <button class="btn-add-sub" onclick="addSubTemplate('${t.id}')">+ Sub</button>
         </div>
       </div>
