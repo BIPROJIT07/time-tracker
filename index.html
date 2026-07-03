@@ -746,7 +746,8 @@ async function addTemplateTask() {
   const existing = await sb(`task_templates?emp_id=eq.${currentUser.emp_id}&order=task_number.desc&limit=1`);
   const nextNum = existing.length?(existing[0].task_number||existing.length)+1:1;
   await sb('task_templates','POST',{emp_id:currentUser.emp_id,emp_name:currentUser.name,title,task_number:nextNum});
-  input.value=''; loadTemplates();
+  input.value='';
+  await loadTemplates();
 }
 
 async function deleteTemplate(id) {
@@ -769,7 +770,7 @@ async function addSubTemplate(parentId) {
 async function deleteSubTemplate(id) {
   if(!confirm('Remove this sub-task?'))return;
   await del('sub_task_templates',id);
-  loadTemplates();
+  await loadTemplates();
 }
 
 async function loadMyTime() {
