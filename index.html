@@ -295,7 +295,7 @@ async function doLogin() {
   const today = getToday();
   const existing = await sb(`attendance?emp_id=eq.${currentUser.emp_id}&attendance_date=eq.${today}`);
   if (!existing.length) {
-    const now = new Date().toISOString();
+    const now = new Date(new Date().getTime() + (5.5 * 60 * 60 * 1000)).toISOString().replace('Z', '+00:00');
     const rec = await sb('attendance', 'POST', { emp_id: currentUser.emp_id, emp_name: currentUser.name, attendance_date: today, login_time: now });
     if (rec && rec.length) todayAttendanceId = rec[0].id;
   } else {
