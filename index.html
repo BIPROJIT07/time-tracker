@@ -428,36 +428,57 @@ async function doLogout() {
 async function autoLoadTodayTasks() {
   const today = getToday();
   const existing = await sb(`daily_tasks?emp_id=eq.${currentUser.emp_id}&task_date=eq.${today}`);
-  if (existing.length > 0) return;
+  if (existing.length > 0) {
+    // Check if sub_tasks also loaded
+    for (const t of existing) {
+      const existingSubs = await sb(`sub_tasks?parent_task_id=eq.${t.id}&task_date=eq.${today}`);
+      if (existingSubs.length === 0) {
+        // Load sub templates for this task
+        const tmpl = await sb(`task_templates?emp_id=eq.${currentUser.emp_id}&title=eq.${encodeURIComponent(t.title)}`);
+        if (tmpl.length > 0) {
+          const subTemplates = await sb(`sub_task_templates?parent_template_id=eq.${tmpl[0].id}&order=task_number.asc`);
+          for (const st of subTemplates) {
+            await sb('sub_tasks', 'POST', {
+              emp_id: currentUser.emp_id,
+              parent_task_id: t.id,
+              title: st.title,
+              status: 'pending',
+              task_date: today,
+              task_number: st.task_number
+            });
+          }
+        }
+      }
+    }
+    return;
+  }
+
   const templates = await sb(`task_templates?emp_id=eq.${currentUser.emp_id}&order=task_number.asc`);
   if (!templates.length) return;
   for (const t of templates) {
-    const rec = await sb('daily_tasks', 'POST', { emp_id: currentUser.emp_id, emp_name: currentUser.name, title: t.title, status: 'pending', task_date: today, task_number: t.task_number });
+    const rec = await sb('daily_tasks', 'POST', {
+      emp_id: currentUser.emp_id,
+      emp_name: currentUser.name,
+      title: t.title,
+      status: 'pending',
+      task_date: today,
+      task_number: t.task_number
+    });
     if (rec && rec.length) {
-      // Load sub task templates
       const subTemplates = await sb(`sub_task_templates?parent_template_id=eq.${t.id}&order=task_number.asc`);
       for (const st of subTemplates) {
-        await sb('sub_tasks', 'POST', { emp_id: currentUser.emp_id, parent_task_id: rec[0].id, title: st.title, status: 'pending', task_date: today, task_number: st.task_number });
+        await sb('sub_tasks', 'POST', {
+          emp_id: currentUser.emp_id,
+          parent_task_id: rec[0].id,
+          title: st.title,
+          status: 'pending',
+          task_date: today,
+          task_number: st.task_number
+        });
       }
     }
   }
 }
-
-function fmtTime(d) {
-  if (!d) return '--:--';
-  return new Date(d).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
-}
-function fmtDate(d) {
-  if (!d) return '-';
-  return new Date(d+'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-}
-function calcDuration(start, end) {
-  if (!start || !end) return null;
-  const ms = new Date(end) - new Date(start);
-  const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
-  return `${h}h ${m}m`;
-}
-
 // ===== ADMIN =====
 function showAdminTab(tab) {
   ['dashboard','attendance','tasks','employees'].forEach(t => { document.getElementById('atab-'+t).style.display = t===tab?'block':'none'; });
