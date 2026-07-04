@@ -286,6 +286,36 @@ async function doLogin() {
   }
 }
 
+function startReminder() {
+  if(remInt) clearInterval(remInt);
+  remInt = setInterval(async()=>{
+    if(!CU) return;
+    const td = today();
+    const tasks = await req('daily_tasks?emp_id=eq.'+CU.emp_id+'&task_date=eq.'+td+'&status=eq.wip');
+    const now = new Date();
+    tasks.forEach(t=>{
+      if(t.start_time) {
+        const h = (now-new Date(t.start_time))/3600000;
+        if(h>=5) {
+          document.getElementById('reminderMsg').textContent = '"'+t.title+'" has been running for '+Math.floor(h)+' hours! Please update.';
+          document.getElementById('reminderPopup').style.display='block';
+          try {
+            const ctx=new(window.AudioContext||window.webkitAudioContext)();
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.connect(g);g.connect(ctx.destination);
+            o.frequency.setValueAtTime(880,ctx.currentTime);
+            o.frequency.setValueAtTime(660,ctx.currentTime+0.2);
+            o.frequency.setValueAtTime(880,ctx.currentTime+0.4);
+            g.gain.setValueAtTime(0.3,ctx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);
+            o.start(ctx.currentTime);o.stop(ctx.currentTime+0.8);
+          } catch(e){}
+        }
+      }
+    });
+  }, 60000);
+}
+
 async function doLogout() {
   if(attId) await patch('attendance',attId,{logout_time:nowISO()});
   if(remInt) clearInterval(remInt);
