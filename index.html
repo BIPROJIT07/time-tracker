@@ -333,12 +333,26 @@ async function doLogout() {
 async function loadAndAutoCreate() {
   const td = today();
   try {
-    await fetch(SB_URL+'/rest/v1/rpc/create_daily_tasks_from_templates', {
-      method: 'POST',
-      headers: {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
-      body: JSON.stringify({p_emp_id: CU.emp_id, p_emp_name: CU.name, p_date: td})
-    });
-  } catch(e) { console.error('autoload error:', e); }
+    const tmpls = await req('task_templates?emp_id=eq.'+CU.emp_id+'&order=task_number.asc');
+    if(!tmpls.length) return;
+    const existingTasks = await req('daily_tasks?emp_id=eq.'+CU.emp_id+'&task_date=eq.'+td);
+    for(const t of tmpls) {
+      let dayTask = existingTasks.find(e => e.title === t.title);
+      if(!dayTask) {
+        const r = await req('daily_tasks','POST',{emp_id:CU.emp_id,emp_name:CU.name,title:t.title,status:'pending',task_date:td,task_number:t.task_number});
+        if(r&&r.length) dayTask = r[0];
+      }
+      if(!dayTask) continue;
+      const subTmpls = await req('sub_task_templates?parent_template_id=eq.'+t.id+'&order=task_number.asc');
+      if(!subTmpls.length) continue;
+      const existingSubs = await req('sub_tasks?parent_task_id=eq.'+dayTask.id);
+      for(const st of subTmpls) {
+        if(!existingSubs.find(s=>s.title===st.title)) {
+          await req('sub_tasks','POST',{emp_id:CU.emp_id,parent_task_id:dayTask.id,title:st.title,status:'pending',task_date:td,task_number:st.task_number});
+        }
+      }
+    }
+  } catch(e) { console.error('autoload error:',e); }
 }
 
 async function loadDash() {
