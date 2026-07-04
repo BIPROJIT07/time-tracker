@@ -452,78 +452,52 @@ async function loadMyTasks() {
   const tasks=await req('daily_tasks?emp_id=eq.'+CU.emp_id+'&task_date=eq.'+td+'&order=task_number.asc');
   const div=document.getElementById('myTasks');
   if(!tasks.length){div.innerHTML='<p style="color:#7a8a7a;padding:16px 0">No tasks yet. Go to <strong>My Task List</strong> to add permanent tasks!</p>';return;}
-  
-  const active=tasks.filter(t=>t.status!=='done');
-  const done=tasks.filter(t=>t.status==='done');
+  const active=tasks.filter(function(t){return t.status!=='done';});
+  const done=tasks.filter(function(t){return t.status==='done';});
   let h='';
-  
   if(active.length) {
     h+='<div style="font-size:13px;font-weight:700;color:#0d4f4f;margin-bottom:12px">Active Tasks ('+active.length+')</div>';
-    
-    for(const t of active) {
-      // Load sub-tasks for each task
-      const subsData = await req('sub_tasks?parent_task_id=eq.'+t.id+'&order=task_number.asc');
+    for(let i=0;i<active.length;i++) {
+      const t=active[i];
+      const subsData=await req('sub_tasks?parent_task_id=eq.'+t.id+'&order=task_number.asc');
       const d=dur(t.start_time,t.end_time);
-      
-      let subHtml = '';
+      let subHtml='';
       if(subsData.length) {
-        subsData.forEach(function(s,i) {
+        for(let j=0;j<subsData.length;j++) {
+          const s=subsData[j];
           const sd=dur(s.start_time,s.end_time);
-          subHtml += '<div class="sub-task-row">';
-          subHtml += '<div class="sub-num">'+(s.task_number||i+1)+'</div>';
-          subHtml += '<div style="flex:1;font-size:13px;'+(s.status==='done'?'text-decoration:line-through;color:#a0a090':'')+'">'+(s.title)+'</div>';
-          subHtml += '<select class="status-select" onchange="updSub(''+s.id+'',this.value)">';
-          subHtml += '<option value="pending" '+(s.status==='pending'?'selected':'')+'>⏳</option>';
-          subHtml += '<option value="wip" '+(s.status==='wip'?'selected':'')+'>🔄</option>';
-          subHtml += '<option value="done" '+(s.status==='done'?'selected':'')+'>✅</option>';
-          subHtml += '</select>';
-          subHtml += '<div class="time-info">';
-          if(s.start_time) subHtml += '<span style="color:#0d4f4f;font-size:10px;font-weight:600">▶ '+ft(s.start_time)+'</span>';
-          if(s.end_time) subHtml += ' <span style="color:#b71c1c;font-size:10px">⏹ '+ft(s.end_time)+'</span>';
-          if(sd) subHtml += '<br><strong style="color:#0d9488;font-size:10px">⏱ '+sd+'</strong>';
-          subHtml += '</div>';
-          if(!s.start_time) subHtml += '<button class="btn-start" style="font-size:10px;padding:4px 8px" onclick="startTask(''+s.id+'','sub_tasks')">▶</button>';
-          if(s.start_time&&!s.end_time) subHtml += '<button class="btn-end" style="font-size:10px;padding:4px 8px" onclick="endTask(''+s.id+'','sub_tasks')">⏹</button>';
-          subHtml += '<button class="btn-del" onclick="delSub(''+s.id+'')">✕</button>';
-          subHtml += '</div>';
-        });
+          subHtml+='<div class="sub-task-row">';
+          subHtml+='<div class="sub-num">'+(s.task_number||j+1)+'</div>';
+          subHtml+='<div style="flex:1;font-size:13px;'+(s.status==='done'?'text-decoration:line-through;color:#a0a090':'')+'">'+(s.title)+'</div>';
+          subHtml+='<select class="status-select" onchange="updSub(''+s.id+'',this.value)"><option value="pending" '+(s.status==='pending'?'selected':'')+'>⏳</option><option value="wip" '+(s.status==='wip'?'selected':'')+'>🔄</option><option value="done" '+(s.status==='done'?'selected':'')+'>✅</option></select>';
+          subHtml+='<div class="time-info">'+(s.start_time?'<span style="color:#0d4f4f;font-size:10px;font-weight:600">▶ '+ft(s.start_time)+'</span>':'')+(s.end_time?' <span style="color:#b71c1c;font-size:10px">⏹ '+ft(s.end_time)+'</span>':'')+(sd?'<br><strong style="color:#0d9488;font-size:10px">⏱ '+sd+'</strong>':'')+'</div>';
+          if(!s.start_time) subHtml+='<button class="btn-start" style="font-size:10px;padding:4px 8px" onclick="startTask(''+s.id+'','sub_tasks')">▶</button>';
+          if(s.start_time&&!s.end_time) subHtml+='<button class="btn-end" style="font-size:10px;padding:4px 8px" onclick="endTask(''+s.id+'','sub_tasks')">⏹</button>';
+          subHtml+='</div>';
+        }
       } else {
-        subHtml = '<p style="color:#7a8a7a;font-size:12px;padding:4px 0">No sub-tasks</p>';
+        subHtml='<p style="color:#7a8a7a;font-size:12px;padding:4px 0">No sub-tasks</p>';
       }
-      
-      h += '<div class="main-task-block">';
-      h += '<div class="main-task-header '+(t.status==='wip'?'wip-bg':'')+'">';
-      h += '<div class="task-num">'+(t.task_number||'')+'</div>';
-      h += '<div class="task-title-main">'+t.title+'</div>';
-      h += '<select class="status-select" onchange="updTask(''+t.id+'',this.value)">';
-      h += '<option value="pending" '+(t.status==='pending'?'selected':'')+'>⏳ PENDING</option>';
-      h += '<option value="wip" '+(t.status==='wip'?'selected':'')+'>🔄 WIP</option>';
-      h += '<option value="done" '+(t.status==='done'?'selected':'')+'>✅ DONE</option>';
-      h += '</select>';
-      h += '<div class="time-info">';
-      if(t.start_time) h += '<span style="color:#0d4f4f;font-weight:600">▶ '+ft(t.start_time)+'</span>';
-      if(t.end_time) h += ' <span style="color:#b71c1c;font-weight:600">⏹ '+ft(t.end_time)+'</span>';
-      if(d) h += '<br><strong style="color:#0d4f4f">⏱ '+d+'</strong>';
-      h += '</div>';
-      if(!t.start_time) h += '<button class="btn-start" onclick="startTask(''+t.id+'','daily_tasks')">▶ Start</button>';
-      if(t.start_time&&!t.end_time) h += '<button class="btn-end" onclick="endTask(''+t.id+'','daily_tasks')">⏹ End</button>';
-      h += '</div>';
-      h += '<div class="sub-tasks-area">'+subHtml+'</div>';
-      h += '</div>';
+      h+='<div class="main-task-block">';
+      h+='<div class="main-task-header '+(t.status==='wip'?'wip-bg':'')+'">';
+      h+='<div class="task-num">'+(t.task_number||'')+'</div>';
+      h+='<div class="task-title-main">'+t.title+'</div>';
+      h+='<select class="status-select" onchange="updTask(''+t.id+'',this.value)"><option value="pending" '+(t.status==='pending'?'selected':'')+'>⏳ PENDING</option><option value="wip" '+(t.status==='wip'?'selected':'')+'>🔄 WIP</option><option value="done" '+(t.status==='done'?'selected':'')+'>✅ DONE</option></select>';
+      h+='<div class="time-info">'+(t.start_time?'<span style="color:#0d4f4f;font-weight:600">▶ '+ft(t.start_time)+'</span>':'')+(t.end_time?' <span style="color:#b71c1c;font-weight:600">⏹ '+ft(t.end_time)+'</span>':'')+(d?'<br><strong style="color:#0d4f4f">⏱ '+d+'</strong>':'')+'</div>';
+      if(!t.start_time) h+='<button class="btn-start" onclick="startTask(''+t.id+'','daily_tasks')">▶ Start</button>';
+      if(t.start_time&&!t.end_time) h+='<button class="btn-end" onclick="endTask(''+t.id+'','daily_tasks')">⏹ End</button>';
+      h+='</div>';
+      h+='<div class="sub-tasks-area">'+subHtml+'</div>';
+      h+='</div>';
     }
   } else {
     h='<p style="color:#0d9488;padding:10px;background:#e0f2f1;border-radius:8px;margin-bottom:12px;font-weight:600">🎉 All tasks completed!</p>';
   }
-  
   if(done.length) {
     h+='<details style="margin-top:14px"><summary style="cursor:pointer;padding:10px 16px;background:#e0f2f1;border-radius:8px;color:#004d40;font-weight:700;font-size:13px">✅ Completed ('+done.length+') — click to view</summary><div style="margin-top:10px">';
-    done.forEach(function(t){
-      const d=dur(t.start_time,t.end_time);
-      h+='<div class="main-task-block"><div class="main-task-header" style="background:#e0f2f1"><div class="task-num" style="background:#0d9488">'+(t.task_number||'')+'</div><div class="task-title-main done-text">'+t.title+'</div><span class="status-done">Done</span><div class="time-info">'+(d?'<strong style="color:#0d4f4f">⏱ '+d+'</strong>':'')+'</div></div></div>';
-    });
+    done.forEach(function(t){const d=dur(t.start_time,t.end_time);h+='<div class="main-task-block"><div class="main-task-header" style="background:#e0f2f1"><div class="task-num" style="background:#0d9488">'+(t.task_number||'')+'</div><div class="task-title-main done-text">'+t.title+'</div><span class="status-done">Done</span><div class="time-info">'+(d?'<strong style="color:#0d4f4f">⏱ '+d+'</strong>':'')+'</div></div></div>';});
     h+='</div></details>';
   }
-  
   div.innerHTML=h;
 }
 
