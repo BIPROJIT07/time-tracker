@@ -442,10 +442,7 @@ async function loadMyTasks() {
             ${s.start_time&&!s.end_time?`<button class="btn-end" style="font-size:10px;padding:4px 8px" onclick="endTask('${s.id}','sub_tasks')">⏹</button>`:''}
             <button class="btn-del" onclick="delSub('${s.id}')">✕</button>
           </div>`;}).join(''):'<p style="color:#7a8a7a;font-size:12px;padding:4px 0">No sub-tasks</p>'}
-          <div class="add-sub-row">
-            <input type="text" id="si_${t.id}" placeholder="Add sub-task..." onkeypress="if(event.key==='Enter')addSub('${t.id}')" />
-            <button class="btn-add-sub" onclick="addSub('${t.id}')">+ Sub</button>
-          </div>
+
         </div>
       </div>`;
     }
