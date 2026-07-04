@@ -299,77 +299,16 @@ async function doLogout() {
   document.getElementById('loginError').textContent='';
 }
 
-// AUTO CREATE TODAY TASKS FROM TEMPLATES
+// AUTO CREATE TODAY TASKS FROM TEMPLATES - Uses database function
 async function loadAndAutoCreate() {
   const td = today();
-  const existing = await req(`daily_tasks?emp_id=eq.${CU.emp_id}&task_date=eq.${td}`);
-  const tmpls = await req(`task_templates?emp_id=eq.${CU.emp_id}&order=task_number.asc`);
-  if(!tmpls.length) return;
-
-  for(const t of tmpls) {
-    // Check if this template's task exists today
-    let dayTask = existing.find(e => e.title === t.title);
-    if(!dayTask) {
-      const r = await req('daily_tasks','POST',{emp_id:CU.emp_id,emp_name:CU.name,title:t.title,status:'pending',task_date:td,task_number:t.task_number});
-      if(r&&r.length) dayTask = r[0];
-    }
-    if(!dayTask) continue;
-
-    // Check sub tasks
-    const subTmpls = await req(`sub_task_templates?parent_template_id=eq.${t.id}&order=task_number.asc`);
-    if(!subTmpls.length) continue;
-    const existingSubs = await req(`sub_tasks?parent_task_id=eq.${dayTask.id}&task_date=eq.${td}`);
-    
-    for(const st of subTmpls) {
-      const exists = existingSubs.find(s => s.title === st.title);
-      if(!exists) {
-        await req('sub_tasks','POST',{emp_id:CU.emp_id,parent_task_id:dayTask.id,title:st.title,status:'pending',task_date:td,task_number:st.task_number});
-      }
-    }
-  }
-}
-
-// REMINDER
-function startReminder() {
-  if(remInt) clearInterval(remInt);
-  remInt = setInterval(async()=>{
-    if(!CU) return;
-    const td = today();
-    const tasks = await req(`daily_tasks?emp_id=eq.${CU.emp_id}&task_date=eq.${td}&status=eq.wip`);
-    const now = new Date();
-    tasks.forEach(t=>{
-      if(t.start_time) {
-        const h = (now-new Date(t.start_time))/3600000;
-        if(h>=5) showReminder(`"${t.title}" running for ${Math.floor(h)} hours! Please update.`);
-      }
-    });
-  }, 60000);
-}
-
-function showReminder(msg) {
-  document.getElementById('reminderMsg').textContent = msg;
-  document.getElementById('reminderPopup').style.display = 'block';
   try {
-    const ctx = new(window.AudioContext||window.webkitAudioContext)();
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.setValueAtTime(880,ctx.currentTime);
-    o.frequency.setValueAtTime(660,ctx.currentTime+0.2);
-    o.frequency.setValueAtTime(880,ctx.currentTime+0.4);
-    g.gain.setValueAtTime(0.3,ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);
-    o.start(ctx.currentTime); o.stop(ctx.currentTime+0.8);
-  } catch(e){}
-  if(Notification.permission==='granted') new Notification('⏰ Task Reminder!',{body:msg});
-}
-
-// ADMIN
-function showATab(tab) {
-  ['dashboard','attendance','tasks','employees'].forEach(t=>{ document.getElementById('at-'+t).style.display=t===tab?'block':'none'; });
-  document.querySelectorAll('#adminView .tab-btn').forEach((b,i)=>{ b.classList.toggle('active',['dashboard','attendance','tasks','employees'][i]===tab); });
-  if(tab==='attendance') loadAtt();
-  if(tab==='tasks') loadATasks();
-  if(tab==='employees') loadEmps();
+    await fetch(SB_URL+'/rest/v1/rpc/create_daily_tasks_from_templates', {
+      method: 'POST',
+      headers: {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({p_emp_id: CU.emp_id, p_emp_name: CU.name, p_date: td})
+    });
+  } catch(e) { console.error('autoload error:', e); }
 }
 
 async function loadDash() {
