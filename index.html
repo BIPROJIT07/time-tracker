@@ -584,7 +584,7 @@ async function loadMyTime() {
   const r=await req(`attendance?emp_id=eq.${CU.emp_id}&order=attendance_date.desc`);
   if(!r.length){document.getElementById('myTime').innerHTML='<p style="color:#7a8a7a;padding:20px">No records</p>';return;}
   let h='<table><thead><tr><th>Date</th><th>Login</th><th>Logout</th><th>Total</th></tr></thead><tbody>';
-  r.forEach(x=>{const d=dur(x.login_time,x.logout_time);h+=`<tr><td>${fd(x.attendance_date)}</td><td><strong>${ft(x.login_time)}</strong></td><td><strong>${ft(x.logout_time)}</strong></td><td>${d?'<strong style="color:#0d4f4f">⏱ '+d+'</strong>':'<span style="color:#c8a84b;font-weight:600">Working...</span>'}</td></tr>`;});
+  r.forEach(x=>{const d=dur(x.login_time,x.logout_time);h+='<tr><td>'+fd(x.attendance_date)+'</td><td><strong>'+ft(x.login_time)+'</strong></td><td><strong>'+ft(x.logout_time)+'</strong></td><td>'+(d?'<strong style="color:#0d4f4f">&#9201; '+d+'</strong>':'<span style="color:#c8a84b;font-weight:600">Working...</span>')+'</td></tr>';
   document.getElementById('myTime').innerHTML=h+'</tbody></table>';
 }
 </script>
