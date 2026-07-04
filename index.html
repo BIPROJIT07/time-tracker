@@ -466,15 +466,15 @@ async function loadAttStatus() {
 
 async function loadMyTasks() {
   const td=today();
-  const tasks=await req(`daily_tasks?emp_id=eq.${CU.emp_id}&task_date=eq.${td}&order=task_number.asc`);
+  const tasks=await req('daily_tasks?emp_id=eq.'+CU.emp_id+'&task_date=eq.'+td+'&order=task_number.asc');
   const div=document.getElementById('myTasks');
   if(!tasks.length){div.innerHTML='<p style="color:#7a8a7a;padding:16px 0">No tasks yet. Go to <strong>My Task List</strong> to add permanent tasks!</p>';return;}
   const active=tasks.filter(t=>t.status!=='done'), done=tasks.filter(t=>t.status==='done');
   let h='';
   if(active.length) {
-    h+=`<div style="font-size:13px;font-weight:700;color:#0d4f4f;margin-bottom:12px">Active Tasks (${active.length})</div>`;
+    h+='<div style="font-size:13px;font-weight:700;color:#0d4f4f;margin-bottom:12px">Active Tasks ('+active.length+')</div>';
     for(const t of active) {
-      const subs=await req(`sub_tasks?parent_task_id=eq.${t.id}&task_date=eq.${td}&order=task_number.asc`);
+      const subs=await req('sub_tasks?parent_task_id=eq.'+t.id+'&order=task_number.asc');
       const d=dur(t.start_time,t.end_time);
       h+=`<div class="main-task-block">
         <div class="main-task-header ${t.status==='wip'?'wip-bg':''}">
