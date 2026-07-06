@@ -217,9 +217,10 @@ tick();setInterval(tick,1000);
 
 function today(){return new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});}
 function nowISO(){return new Date().toISOString();}
-function ft(d){if(!d)return '--:--';return new Date(d).toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',hour12:true});}
+function pd(d){if(!d)return null;if(typeof d==='string'&&d.indexOf('Z')<0&&d.indexOf('+')<0){d=d.replace(' ','T')+'Z';}return new Date(d);}
+function ft(d){if(!d)return '--:--';return pd(d).toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',hour12:true});}
 function fd(d){if(!d)return '-';return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',year:'numeric',month:'short',day:'numeric'});}
-function dur(s,e){if(!s||!e)return null;var ms=new Date(e)-new Date(s);return Math.floor(ms/3600000)+'h '+Math.floor((ms%3600000)/60000)+'m';}
+function dur(s,e){if(!s||!e)return null;var ms=pd(e)-pd(s);return Math.floor(ms/3600000)+'h '+Math.floor((ms%3600000)/60000)+'m';}
 
 async function req(path,method,body){
   method=method||'GET';
@@ -320,7 +321,7 @@ function startReminder(){
     var now=new Date();
     tasks.forEach(function(t){
       if(t.start_time){
-        var h=(now-new Date(t.start_time))/3600000;
+        var h=(now-pd(t.start_time))/3600000;
         if(h>=5){
           document.getElementById('reminderMsg').textContent='"'+t.title+'" has been running for '+Math.floor(h)+' hours!';
           document.getElementById('reminderPopup').style.display='block';
