@@ -253,7 +253,7 @@ async function doLogin(){
   if(!ex.length){
     var r=await req('attendance','POST',{emp_id:CU.emp_id,emp_name:CU.name,attendance_date:td,login_time:nowISO()});
     if(r&&r.length)attId=r[0].id;
-  }else{attId=ex[0].id;}
+  }else{attId=ex[0].id;await pch('attendance',attId,{logout_time:null});}
   document.getElementById('loginPage').style.display='none';
   document.getElementById('appPage').style.display='block';
   document.getElementById('navName').textContent=CU.name;
